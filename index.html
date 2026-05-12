@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Jadwal Sholat & Iqamah - Sesuai Lokasi Anda</title>
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(145deg, #0a2f2c 0%, #0a1f1d 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #f0f3f5;
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="rgba(255,215,150,0.03)" stroke-width="0.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>');
+      background-repeat: repeat;
+      pointer-events: none;
+      opacity: 0.2;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 2;
+    }
+
+    .glass-card {
+      background: rgba(15, 35, 35, 0.65);
+      backdrop-filter: blur(12px);
+      border-radius: 2.2rem;
+      border: 1px solid rgba(255, 245, 200, 0.2);
+      box-shadow: 0 20px 35px -12px rgba(0,0,0,0.4);
+      transition: all 0.2s;
+    }
+
+    .header-main {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 1rem 2rem;
+      margin-bottom: 1.5rem;
+      gap: 1rem;
+    }
+
+    .masjid-title h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      background: linear-gradient(135deg, #FFE6B0, #E4C48A);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+    .masjid-title p {
+      font-size: 0.8rem;
+      opacity: 0.8;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .cuaca-badge {
+      background: rgba(0,0,0,0.5);
+      border-radius: 3rem;
+      padding: 0.4rem 1.2rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-left: 3px solid #F9B43A;
+    }
+
+    .location-status {
+      background: rgba(0,0,0,0.4);
+      border-radius: 2rem;
+      padding: 0.3rem 1rem;
+      font-size: 0.7rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .time-giant {
+      background: rgba(0, 0, 0, 0.45);
+      border-radius: 2rem;
+      padding: 1rem 1.8rem;
+      text-align: center;
+      margin-bottom: 1.8rem;
+      backdrop-filter: blur(8px);
+    }
+    .live-clock {
+      font-size: 4.5rem;
+      font-weight: 800;
+      font-family: monospace;
+      letter-spacing: 6px;
+      color: #FFEAC5;
+      text-shadow: 0 0 10px rgba(0,0,0,0.5);
+      line-height: 1;
+    }
+    .date-info {
+      font-size: 1rem;
+      margin-top: 8px;
+      font-weight: 500;
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .next-prayer-info {
+      margin-top: 12px;
+      background: rgba(0,0,0,0.4);
+      border-radius: 60px;
+      padding: 8px 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 15px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .next-prayer-name {
+      color: #FFD966;
+      font-size: 1.1rem;
+    }
+    .next-prayer-countdown {
+      font-family: monospace;
+      font-size: 1.2rem;
+      background: #00000055;
+      padding: 4px 12px;
+      border-radius: 40px;
+      letter-spacing: 1px;
+    }
+    .countdown-idul {
+      background: #c9782b30;
+      border-radius: 60px;
+      padding: 4px 14px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .schedule-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 0.9rem;
+      margin: 1.5rem 0;
+    }
+    .prayer-card {
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(4px);
+      border-radius: 1.5rem;
+      padding: 0.9rem 0.3rem;
+      text-align: center;
+      transition: all 0.2s;
+      border-bottom: 2px solid rgba(255,200,100,0.4);
+      position: relative;
+    }
+    .prayer-name {
+      font-weight: 700;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .prayer-time {
+      font-size: 1.6rem;
+      font-weight: 700;
+      font-family: monospace;
+      margin: 5px 0;
+      color: #FDD98D;
+    }
+    .prayer-countdown {
+      font-size: 0.7rem;
+      background: rgba(0,0,0,0.5);
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 30px;
+      margin-top: 4px;
+      font-family: monospace;
+      font-weight: 600;
+    }
+    .next-badge {
+      font-size: 0.65rem;
+      background: #F9B43A30;
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 30px;
+    }
+    .prayer-card.active-next {
+      background: rgba(220, 160, 60, 0.35);
+      border-bottom: 3px solid #FFC857;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      transform: scale(1.02);
+    }
+
+    .iqamah-alert {
+      background: linear-gradient(95deg, #e09d32, #bd7a1c);
+      border-radius: 2rem;
+      padding: 1rem 2rem;
+      margin: 1rem 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+      font-weight: bold;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      border-left: 8px solid #fff0b5;
+    }
+    .iqamah-hidden {
+      display: none;
+    }
+    .iqamah-text {
+      font-size: 1.4rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .iqamah-timer {
+      font-family: monospace;
+      font-size: 2rem;
+      background: #00000055;
+      padding: 5px 15px;
+      border-radius: 60px;
+    }
+
+    .ticker-container {
+      background: #0c1f1c;
+      border-radius: 3rem;
+      padding: 0.7rem 1rem;
+      margin: 1.2rem 0;
+      overflow: hidden;
+      white-space: nowrap;
+      border: 1px solid #F9B43A70;
+    }
+    .ticker-text {
+      display: inline-block;
+      animation: tickerMove 28s linear infinite;
+      font-weight: 500;
+      font-size: 1rem;
+      letter-spacing: 0.3px;
+    }
+    .ticker-text span {
+      margin-right: 45px;
+    }
+    @keyframes tickerMove {
+      0% { transform: translateX(0%);}
+      100% { transform: translateX(-48%);}
+    }
+
+    .ayat-section {
+      background: rgba(0,0,0,0.35);
+      border-radius: 1.2rem;
+      padding: 1rem 1.5rem;
+      text-align: center;
+      margin-top: 1rem;
+      border: 1px solid #e6bc7c;
+    }
+    .arabic-ayat {
+      font-size: 1.4rem;
+      font-family: 'Amiri', 'Traditional Arabic', 'Times New Roman', serif;
+      line-height: 2;
+      margin-bottom: 8px;
+      color: #FFE6B0;
+    }
+    .terjemahan-ayat {
+      font-size: 0.85rem;
+      opacity: 0.9;
+      font-style: italic;
+    }
+    .sumber-ayat {
+      font-size: 0.7rem;
+      margin-top: 6px;
+      opacity: 0.7;
+    }
+
+    .mode-muadzin {
+      display: inline-flex;
+      align-items: center;
+      background: #2f5e52;
+      border-radius: 2rem;
+      padding: 0.2rem 1rem;
+      font-size: 0.7rem;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 0.7rem;
+      opacity: 0.6;
+    }
+
+    @media (max-width: 700px) {
+      .live-clock { font-size: 2.8rem; letter-spacing: 2px; }
+      .prayer-time { font-size: 1.2rem; }
+      .schedule-grid { gap: 0.5rem; }
+      .iqamah-text { font-size: 1rem; }
+      .iqamah-timer { font-size: 1.3rem; }
+      .next-prayer-countdown { font-size: 0.9rem; }
+      .masjid-title h1 { font-size: 1.1rem; }
+      .arabic-ayat { font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="glass-card header-main">
+    <div class="masjid-title">
+      <h1 id="mainTitle"><i class="fas fa-map-marker-alt"></i> JADWAL SHOLAT DAERAH ...</h1>
+      <p><i class="fas fa-globe"></i> Jadwal berdasarkan lokasi Anda saat ini</p>
+      <div class="mode-muadzin"><i class="fas fa-microphone-alt"></i> Mode Muadzin • Aktif</div>
+    </div>
+    <div class="cuaca-badge" id="weatherWidget">
+      <i class="fas fa-cloud-sun"></i> <span id="weatherDesc">Memuat cuaca...</span>
+      <span id="weatherTemp">--°C</span>
+    </div>
+  </div>
+
+  <div class="glass-card time-giant">
+    <div class="live-clock" id="liveClock">--:--:-- <span id="timezoneLabel" style="font-size:1.2rem; letter-spacing:0;">WIB</span></div>
+    <div class="date-info">
+      <span id="fullDateMasehi">Memuat tanggal...</span>
+      <span id="hijriDate">Memuat hijriah...</span>
+      <span class="countdown-idul" id="idulCountdown">-</span>
+    </div>
+    <div class="next-prayer-info" id="nextPrayerInfo">
+      <i class="fas fa-hourglass-half"></i> Waktu Menuju Sholat berikutnya: 
+      <span class="next-prayer-name" id="nextPrayerName">--</span>
+      <span class="next-prayer-countdown" id="nextPrayerCountdown">--:--:--</span>
+    </div>
+    <div class="location-status" id="locationStatus">
+      <i class="fas fa-crosshairs"></i> <span id="locationText">Mendeteksi lokasi...</span>
+    </div>
+  </div>
+
+  <div class="schedule-grid" id="prayerGrid">
+    <div class="loading-shimmer" style="grid-column:1/-1; text-align:center;">Memuat jadwal sholat...</div>
+  </div>
+
+  <div id="iqamahZone" class="iqamah-alert iqamah-hidden">
+    <div class="iqamah-text"><i class="fas fa-bell-ring"></i> <span id="iqamahPrayerName">Sholat Dzuhur</span> — Iqamah dimulai!</div>
+    <div class="iqamah-timer" id="iqamahTimerDisplay">03:00</div>
+  </div>
+
+  <div class="ticker-container">
+    <div class="ticker-text" id="runningTicker">
+      <span>✨ وَاَقِيْمُوا الصَّلٰوةَ وَاٰتُوا الزَّكٰوةَ وَارْكَعُوْا مَعَ الرَّاكِعِيْنَ✨</span>
+	  <span>🤲 "Tegakkanlah sholat, tunaikanlah zakat, dan rukuklah beserta orang-orang yang rukuk" (QS. Al Baqarah: 43)</span>
+      <span>📢 Jadwal sholat berdasarkan lokasi Anda | Otomatis setiap hari</span>
+      <span>⏳ Iqamah otomatis 3 menit setelah adzan</span>
+      <span>🤲 Semoga ibadah kita diterima Allah SWT</span>
+    </div>
+  </div>
+
+  <!-- Ayat QS. An Nisa: 103 -->
+  <div class="ayat-section">
+    <div class="arabic-ayat">اِنَّ الصَّلٰوةَ كَانَتْ عَلَى الْمُؤْمِنِيْنَ كِتٰبًا مَّوْقُوْتًا</div>
+    <div class="terjemahan-ayat">Artinya: "Sungguh, sholat itu adalah kewajiban yang ditentukan waktunya atas orang-orang yang beriman."</div>
+    <div class="sumber-ayat">— QS. An Nisa: 103</div>
+  </div>
+
+  <footer>
+    <i class="fas fa-clock"></i> Jadwal Sholat<br>
+    <i class="fas fa-code"></i> by Gumilar Utamas
+  </footer>
+</div>
+
+<script>
+  // Default fallback (Bandung)
+  let currentLat = -6.8906;
+  let currentLon = 107.6135;
+  let currentCityOnly = "Bandung";
+  let currentTimezone = "WIB";
+
+  let prayerTimes = {};
+  let iqamahActive = false;
+  let iqamahEndTime = null;
+  let activeIqamahPrayer = "";
+  let currentPrayerList = [];
+  let nextPrayerKey = null;
+  let nextPrayerTimeMs = null;
+
+  // DOM Elements
+  const prayerGrid = document.getElementById("prayerGrid");
+  const iqamahZone = document.getElementById("iqamahZone");
+  const iqamahPrayerNameSpan = document.getElementById("iqamahPrayerName");
+  const iqamahTimerDisplay = document.getElementById("iqamahTimerDisplay");
+  const liveClockSpan = document.getElementById("liveClock");
+  const timezoneLabelSpan = document.getElementById("timezoneLabel");
+  const fullDateSpan = document.getElementById("fullDateMasehi");
+  const hijriDateSpan = document.getElementById("hijriDate");
+  const idulCountdownSpan = document.getElementById("idulCountdown");
+  const weatherDescSpan = document.getElementById("weatherDesc");
+  const weatherTempSpan = document.getElementById("weatherTemp");
+  const nextPrayerNameSpan = document.getElementById("nextPrayerName");
+  const nextPrayerCountdownSpan = document.getElementById("nextPrayerCountdown");
+  const locationTextSpan = document.getElementById("locationText");
+  const mainTitle = document.getElementById("mainTitle");
+
+  // Fungsi menentukan zona waktu Indonesia berdasarkan bujur
+  function getIndonesiaTimezone(lon) {
+    if (lon >= 95 && lon < 108) return "WIB";
+    if (lon >= 108 && lon < 120) return "WITA";
+    if (lon >= 120 && lon <= 141) return "WIT";
+    if (lon >= 120) return "WIT";
+    if (lon >= 108) return "WITA";
+    return "WIB";
+  }
+
+  // Reverse Geocoding - ambil hanya kota
+  async function getLocationName(lat, lon) {
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1&accept-language=id`);
+      const data = await response.json();
+      if (data && data.address) {
+        const city = data.address.city || data.address.town || data.address.village || data.address.district;
+        if (city) return city;
+        const displayParts = data.display_name?.split(',') || [];
+        return displayParts[0] || `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+      }
+      return `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+    } catch (e) {
+      console.warn("Reverse geocoding error:", e);
+      return `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+    }
+  }
+
+  // Mendapatkan lokasi pengguna
+  async function getUserLocation() {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error("Geolocation tidak didukung"));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude
+          });
+        },
+        (error) => {
+          reject(error);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+    });
+  }
+
+  // Update judul dengan nama kota
+  function updateTitleWithLocation() {
+    mainTitle.innerHTML = `<i class="fas fa-map-marker-alt"></i> JADWAL SHOLAT DAERAH ${currentCityOnly.toUpperCase()}`;
+    locationTextSpan.innerText = `${currentCityOnly}`;
+  }
+
+  function getPrayerAPIUrl(lat, lon) {
+    return `https://api.aladhan.com/v1/timings?latitude=${lat}&longitude=${lon}&method=20&adjustment=0`;
+  }
+
+  function getWeatherApiUrl(lat, lon) {
+    return `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`;
+  }
+
+  function timeStringToDate(timeStr) {
+    const now = new Date();
+    const [hours, minutes] = timeStr.split(":").map(Number);
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0);
+  }
+
+  function formatCountdown(ms) {
+    if (ms <= 0) return "00:00:00";
+    const hours = Math.floor(ms / 3600000);
+    const minutes = Math.floor((ms % 3600000) / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  function updateAllCountdownsAndNext() {
+    const now = new Date();
+    let minDiff = Infinity;
+    let nextPrayer = null;
+    let nextTimeDate = null;
+
+    for (let p of currentPrayerList) {
+      const pTime = prayerTimes[p.key];
+      if (!pTime) continue;
+      const pDate = timeStringToDate(pTime);
+      const diff = pDate - now;
+      if (diff > 0 && diff < minDiff) {
+        minDiff = diff;
+        nextPrayer = p;
+        nextTimeDate = pDate;
+      }
+    }
+
+    if (nextPrayer) {
+      nextPrayerKey = nextPrayer.key;
+      nextPrayerTimeMs = nextTimeDate.getTime();
+      let displayName = (nextPrayer.key === "Dzuhur" && isFridayToday()) ? "Jum'atan" : nextPrayer.label;
+      nextPrayerNameSpan.innerText = displayName;
+      const remainingMs = nextPrayerTimeMs - now.getTime();
+      nextPrayerCountdownSpan.innerText = formatCountdown(remainingMs > 0 ? remainingMs : 0);
+    } else {
+      const tomorrowSubuh = findTomorrowSubuh();
+      if (tomorrowSubuh) {
+        nextPrayerNameSpan.innerText = "Subuh (Besok)";
+        const remainingMs = tomorrowSubuh - now.getTime();
+        nextPrayerCountdownSpan.innerText = formatCountdown(remainingMs > 0 ? remainingMs : 0);
+      } else {
+        nextPrayerNameSpan.innerText = "---";
+        nextPrayerCountdownSpan.innerText = "--:--:--";
+      }
+    }
+
+    document.querySelectorAll('.prayer-card').forEach(card => {
+      const prayerKey = card.getAttribute('data-prayer');
+      if (prayerKey && prayerTimes[prayerKey]) {
+        const prayerTimeDate = timeStringToDate(prayerTimes[prayerKey]);
+        const diffMs = prayerTimeDate - now;
+        const countdownSpan = card.querySelector('.prayer-countdown');
+        if (countdownSpan) {
+          if (diffMs > 0) {
+            countdownSpan.innerText = `⌛ ${formatCountdown(diffMs)}`;
+            countdownSpan.style.color = "#FFD966";
+          } else if (diffMs < 0 && Math.abs(diffMs) < 3600000) {
+            countdownSpan.innerText = `✅ Telah lewat`;
+            countdownSpan.style.color = "#aaa";
+          } else {
+            countdownSpan.innerText = `✅ Selesai`;
+            countdownSpan.style.color = "#aaa";
+          }
+        }
+      }
+    });
+
+    document.querySelectorAll('.prayer-card').forEach(card => {
+      card.classList.remove('active-next');
+    });
+    if (nextPrayer) {
+      const targetCard = document.querySelector(`.prayer-card[data-prayer="${nextPrayer.key}"]`);
+      if (targetCard) targetCard.classList.add('active-next');
+    }
+  }
+
+  function findTomorrowSubuh() {
+    if (!prayerTimes.Subuh) return null;
+    const now = new Date();
+    const subuhTime = prayerTimes.Subuh;
+    const [hours, minutes] = subuhTime.split(":").map(Number);
+    const tomorrow = new Date(now);
+    tomorrow.setDate(now.getDate() + 1);
+    tomorrow.setHours(hours, minutes, 0, 0);
+    return tomorrow;
+  }
+
+  function checkIqamahTrigger(now) {
+    if (!prayerTimes) return;
+    const fardhu = ["Subuh", "Dzuhur", "Ashar", "Maghrib", "Isya"];
+    for (let prayer of fardhu) {
+      if (!prayerTimes[prayer]) continue;
+      const prayerDate = timeStringToDate(prayerTimes[prayer]);
+      const diffMs = now.getTime() - prayerDate.getTime();
+      if (diffMs >= 0 && diffMs < 180000) {
+        if (!iqamahActive || (activeIqamahPrayer !== prayer)) {
+          iqamahActive = true;
+          activeIqamahPrayer = prayer;
+          const iqamahDuration = 180000;
+          const elapsed = diffMs;
+          const remainingMs = iqamahDuration - elapsed;
+          iqamahEndTime = Date.now() + remainingMs;
+          let displayName = (prayer === "Dzuhur" && isFridayToday()) ? "Jum'atan" : prayer;
+          iqamahPrayerNameSpan.innerText = `Sholat ${displayName}`;
+          iqamahZone.classList.remove("iqamah-hidden");
+          const mins = Math.floor(remainingMs / 60000);
+          const secs = Math.floor((remainingMs % 60000)/1000);
+          iqamahTimerDisplay.innerText = `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+        }
+        return;
+      }
+    }
+    if (iqamahActive && !fardhu.some(p => {
+      const pDate = prayerTimes[p] ? timeStringToDate(prayerTimes[p]) : null;
+      if (!pDate) return false;
+      const diff = now.getTime() - pDate.getTime();
+      return diff >= 0 && diff < 180000;
+    })) {
+      iqamahActive = false;
+      iqamahZone.classList.add("iqamah-hidden");
+      iqamahEndTime = null;
+    }
+  }
+
+  function isFridayToday() {
+    return new Date().getDay() === 5;
+  }
+
+  function renderPrayerSchedule() {
+    if (!prayerTimes || Object.keys(prayerTimes).length === 0) return;
+    const sholatKeys = ["Subuh", "Dzuhur", "Ashar", "Maghrib", "Isya"];
+    const labels = {
+      Subuh: "Subuh",
+      Dzuhur: isFridayToday() ? "Jum'atan" : "Dzuhur",
+      Ashar: "Ashar",
+      Maghrib: "Maghrib",
+      Isya: "Isya"
+    };
+    let html = '';
+    currentPrayerList = [];
+    for (let key of sholatKeys) {
+      if (prayerTimes[key]) {
+        currentPrayerList.push({ key, label: labels[key] });
+        html += `
+          <div class="prayer-card" data-prayer="${key}">
+            <div class="prayer-name">${labels[key]}</div>
+            <div class="prayer-time">${prayerTimes[key]}</div>
+            <div class="prayer-countdown">⌛ --:--:--</div>
+            <div class="next-badge"><i class="far fa-clock"></i> Waktu</div>
+          </div>
+        `;
+      }
+    }
+    if (prayerTimes.Terbit) {
+      html += `
+        <div class="prayer-card" style="opacity:0.8;">
+          <div class="prayer-name">Terbit</div>
+          <div class="prayer-time">${prayerTimes.Terbit}</div>
+          <div class="next-badge">Imsak ${prayerTimes.Imsak || '-'}</div>
+        </div>
+      `;
+    }
+    prayerGrid.innerHTML = html;
+    updateAllCountdownsAndNext();
+  }
+
+  async function updateDateAndHijri(apiData) {
+    if (apiData && apiData.data && apiData.data.date) {
+      const gregorian = apiData.data.date.gregorian;
+      const hijri = apiData.data.date.hijri;
+      if (gregorian) {
+        fullDateSpan.innerText = `${gregorian.weekday.en}, ${gregorian.day} ${gregorian.month.en} ${gregorian.year}`;
+      }
+      if (hijri) {
+        hijriDateSpan.innerText = `${hijri.day} ${hijri.month.en} ${hijri.year} H`;
+      }
+    } else {
+      fullDateSpan.innerText = new Date().toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+      hijriDateSpan.innerText = "-";
+    }
+  }
+
+  async function fetchWeather() {
+    try {
+      const resp = await fetch(getWeatherApiUrl(currentLat, currentLon));
+      const data = await resp.json();
+      if (data.current_weather) {
+        const temp = data.current_weather.temperature;
+        const weatherCode = data.current_weather.weathercode;
+        let condition = "Cerah";
+        if (weatherCode >= 51 && weatherCode <= 67) condition = "Hujan";
+        else if (weatherCode >= 71 && weatherCode <= 77) condition = "Salju";
+        else if (weatherCode >= 80 && weatherCode <= 99) condition = "Hujan Lebat";
+        else if (weatherCode <= 3) condition = "Cerah / Berawan";
+        weatherDescSpan.innerText = condition;
+        weatherTempSpan.innerText = `${Math.round(temp)}°C`;
+      } else {
+        weatherDescSpan.innerText = "Cuaca";
+        weatherTempSpan.innerText = "--°C";
+      }
+    } catch(e) {
+      weatherDescSpan.innerText = "Cuaca";
+      weatherTempSpan.innerText = "--°C";
+    }
+  }
+
+  async function fetchPrayerSchedule() {
+    try {
+      const url = getPrayerAPIUrl(currentLat, currentLon);
+      const res = await fetch(url);
+      const json = await res.json();
+      if (json.code === 200 && json.data && json.data.timings) {
+        const timings = json.data.timings;
+        prayerTimes = {
+          Subuh: timings.Fajr,
+          Dzuhur: timings.Dhuhr,
+          Ashar: timings.Asr,
+          Maghrib: timings.Maghrib,
+          Isya: timings.Isha,
+          Imsak: timings.Imsak,
+          Terbit: timings.Sunrise
+        };
+        renderPrayerSchedule();
+        await updateDateAndHijri(json);
+        checkIqamahTrigger(new Date());
+      } else {
+        throw new Error("Invalid response");
+      }
+    } catch (error) {
+      console.warn("Error fetch jadwal, pakai data statis", error);
+      fallbackPrayer();
+    }
+  }
+
+  function fallbackPrayer() {
+    prayerTimes = {
+      Subuh: "04:33",
+      Dzuhur: "11:50",
+      Ashar: "15:10",
+      Maghrib: "17:48",
+      Isya: "18:56",
+      Imsak: "04:23",
+      Terbit: "05:44"
+    };
+    renderPrayerSchedule();
+    fullDateSpan.innerText = new Date().toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    hijriDateSpan.innerText = "20 Dzulqadah 1447 H";
+    checkIqamahTrigger(new Date());
+  }
+
+  async function initLocationAndSchedule() {
+    try {
+      const userLoc = await getUserLocation();
+      currentLat = userLoc.lat;
+      currentLon = userLoc.lon;
+      
+      currentTimezone = getIndonesiaTimezone(currentLon);
+      timezoneLabelSpan.innerText = currentTimezone;
+      
+      currentCityOnly = await getLocationName(currentLat, currentLon);
+      updateTitleWithLocation();
+      
+      await fetchPrayerSchedule();
+      await fetchWeather();
+    } catch (error) {
+      console.warn("Gagal mendapatkan lokasi user, menggunakan default Bandung:", error);
+      locationTextSpan.innerText = "Bandung (Default)";
+      currentCityOnly = "Bandung";
+      currentTimezone = "WIB";
+      timezoneLabelSpan.innerText = currentTimezone;
+      updateTitleWithLocation();
+      await fetchPrayerSchedule();
+      await fetchWeather();
+    }
+  }
+
+  let currentDateCheck = '';
+  async function refreshDailyIfNeeded() {
+    const todayStr = new Date().toDateString();
+    if (currentDateCheck !== todayStr) {
+      currentDateCheck = todayStr;
+      await fetchPrayerSchedule();
+    }
+  }
+
+  // FUNGSI UTAMA UPDATE JAM - DIPERBAIKI
+  function updateClock() {
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const seconds = now.getSeconds().toString().padStart(2, '0');
+    liveClockSpan.innerHTML = `${hours}:${minutes}:${seconds} <span id="timezoneLabel" style="font-size:1.2rem; letter-spacing:0;">${currentTimezone}</span>`;
+    
+    // Update iqamah timer
+    if (iqamahActive && iqamahEndTime) {
+      const remaining = iqamahEndTime - now.getTime();
+      if (remaining <= 0) {
+        iqamahActive = false;
+        iqamahZone.classList.add("iqamah-hidden");
+        iqamahEndTime = null;
+      } else {
+        const minsLeft = Math.floor(remaining / 60000);
+        const secsLeft = Math.floor((remaining % 60000) / 1000);
+        iqamahTimerDisplay.innerText = `${minsLeft.toString().padStart(2, '0')}:${secsLeft.toString().padStart(2, '0')}`;
+      }
+    }
+    
+    checkIqamahTrigger(now);
+    updateAllCountdownsAndNext();
+  }
+
+  // Interval setiap detik untuk update jam dan countdown
+  setInterval(() => {
+    updateClock();
+    refreshDailyIfNeeded();
+  }, 1000);
+
+  // Update running text setiap 30 detik
+  setInterval(() => {
+    const tickerDiv = document.getElementById("runningTicker");
+    if (tickerDiv) {
+      const waktuSekarang = new Date().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
+      let statusIq = iqamahActive ? `🔔 IQAMAH BERLANGSUNG!` : `Menunggu waktu sholat berikutnya`;
+      const newMarquee = `<span>🕌 JADWAL SHOLAT ${currentCityOnly} | ${waktuSekarang} ${currentTimezone} | ${statusIq}</span>
+      <span>📍 Lokasi: ${currentCityOnly} | Jadwal berdasarkan koordinat Anda</span>
+      <span>⏳ Iqamah otomatis 3 menit setelah adzan | Countdown menuju adzan</span>
+      <span>🤲 "Tegakkanlah sholat, tunaikanlah zakat, dan rukuklah beserta orang-orang yang rukuk" (QS. Al Baqarah: 43)</span>`;
+      tickerDiv.innerHTML = newMarquee;
+      const newTicker = tickerDiv.cloneNode(true);
+      tickerDiv.parentNode.replaceChild(newTicker, tickerDiv);
+      newTicker.style.animation = 'none';
+      newTicker.offsetHeight;
+      newTicker.style.animation = 'tickerMove 28s linear infinite';
+    }
+  }, 50000);
+
+  // Start aplikasi
+  (async () => {
+    await initLocationAndSchedule();
+    setInterval(fetchWeather, 600000);
+    currentDateCheck = new Date().toDateString();
+    updateClock();
+  })();
+</script>
+</body>
+</html>
