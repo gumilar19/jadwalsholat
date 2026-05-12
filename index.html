@@ -243,6 +243,91 @@
       border-radius: 60px;
     }
 
+    /* Style untuk Masjid Terdekat */
+    .masjid-terdekat-section {
+      margin-top: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .masjid-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0.8rem 1.5rem;
+      border-bottom: 1px solid rgba(255,215,150,0.3);
+    }
+    .masjid-header h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+    .masjid-list {
+      padding: 0.5rem;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .masjid-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.8rem 1rem;
+      margin: 0.5rem;
+      background: rgba(0,0,0,0.3);
+      border-radius: 1.2rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid rgba(255,215,150,0.2);
+    }
+    .masjid-item:hover {
+      background: rgba(220, 160, 60, 0.3);
+      transform: translateX(5px);
+      border-color: #FFC857;
+    }
+    .masjid-info {
+      flex: 1;
+    }
+    .masjid-name {
+      font-weight: 700;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .masjid-name i {
+      color: #FFD966;
+    }
+    .masjid-address {
+      font-size: 0.7rem;
+      opacity: 0.7;
+      margin-top: 3px;
+    }
+    .masjid-distance {
+      background: #2f5e52;
+      padding: 5px 12px;
+      border-radius: 30px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .masjid-distance i {
+      margin-right: 4px;
+      font-size: 0.7rem;
+    }
+    .loading-masjid {
+      text-align: center;
+      padding: 2rem;
+      color: #aaa;
+    }
+    .masjid-list::-webkit-scrollbar {
+      width: 5px;
+    }
+    .masjid-list::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.2);
+      border-radius: 10px;
+    }
+    .masjid-list::-webkit-scrollbar-thumb {
+      background: #FFC857;
+      border-radius: 10px;
+    }
+
     .ticker-container {
       background: #0c1f1c;
       border-radius: 3rem;
@@ -318,6 +403,8 @@
       .next-prayer-countdown { font-size: 0.9rem; }
       .masjid-title h1 { font-size: 1.1rem; }
       .arabic-ayat { font-size: 1rem; }
+      .masjid-name { font-size: 0.85rem; }
+      .masjid-distance { font-size: 0.7rem; padding: 3px 8px; }
     }
   </style>
 </head>
@@ -361,10 +448,24 @@
     <div class="iqamah-timer" id="iqamahTimerDisplay">03:00</div>
   </div>
 
+  <!-- PANEL MASJID TERDEKAT -->
+  <div class="glass-card masjid-terdekat-section">
+    <div class="masjid-header">
+      <i class="fas fa-mosque" style="font-size: 1.3rem; color: #FFD966;"></i>
+      <h3>📌 Masjid Terdekat</h3>
+      <i class="fas fa-location-dot" style="font-size: 0.9rem; opacity: 0.7;"></i>
+    </div>
+    <div id="masjidList" class="masjid-list">
+      <div class="loading-masjid">
+        <i class="fas fa-spinner fa-pulse"></i> Memuat daftar masjid terdekat...
+      </div>
+    </div>
+  </div>
+
   <div class="ticker-container">
     <div class="ticker-text" id="runningTicker">
       <span>✨ وَاَقِيْمُوا الصَّلٰوةَ وَاٰتُوا الزَّكٰوةَ وَارْكَعُوْا مَعَ الرَّاكِعِيْنَ✨</span>
-	  <span>🤲 "Tegakkanlah sholat, tunaikanlah zakat, dan rukuklah beserta orang-orang yang rukuk" (QS. Al Baqarah: 43)</span>
+      <span>🤲 "Tegakkanlah sholat, tunaikanlah zakat, dan rukuklah beserta orang-orang yang rukuk" (QS. Al Baqarah: 43)</span>
       <span>📢 Jadwal sholat berdasarkan lokasi Anda | Otomatis setiap hari</span>
       <span>⏳ Iqamah otomatis 3 menit setelah adzan</span>
       <span>🤲 Semoga ibadah kita diterima Allah SWT</span>
@@ -399,6 +500,9 @@
   let nextPrayerKey = null;
   let nextPrayerTimeMs = null;
 
+  // Daftar masjid terdekat (akan diisi dari Overpass API)
+  let nearestMosques = [];
+
   // DOM Elements
   const prayerGrid = document.getElementById("prayerGrid");
   const iqamahZone = document.getElementById("iqamahZone");
@@ -415,6 +519,7 @@
   const nextPrayerCountdownSpan = document.getElementById("nextPrayerCountdown");
   const locationTextSpan = document.getElementById("locationText");
   const mainTitle = document.getElementById("mainTitle");
+  const masjidListDiv = document.getElementById("masjidList");
 
   // Fungsi menentukan zona waktu Indonesia berdasarkan bujur
   function getIndonesiaTimezone(lon) {
@@ -470,6 +575,182 @@
   function updateTitleWithLocation() {
     mainTitle.innerHTML = `<i class="fas fa-map-marker-alt"></i> JADWAL SHOLAT DAERAH ${currentCityOnly.toUpperCase()}`;
     locationTextSpan.innerText = `${currentCityOnly}`;
+  }
+
+  // Hitung jarak antara dua koordinat (Haversine formula) dalam KM
+  function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Radius bumi dalam KM
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }
+
+  // Format jarak menjadi km atau meter
+  function formatDistance(distanceKm) {
+    if (distanceKm < 1) {
+      return `${Math.round(distanceKm * 1000)} m`;
+    }
+    return `${distanceKm.toFixed(1)} km`;
+  }
+
+  // Fetch masjid terdekat dari Overpass API (OpenStreetMap)
+  async function fetchNearbyMosques(lat, lon, radius = 3000) {
+    try {
+      // Query Overpass API untuk mencari amenity=place_of_worship dengan religion=muslim
+      const overpassUrl = "https://overpass-api.de/api/interpreter";
+      const query = `
+        [out:json];
+        (
+          node["amenity"="place_of_worship"]["religion"="muslim"](around:${radius},${lat},${lon});
+          way["amenity"="place_of_worship"]["religion"="muslim"](around:${radius},${lat},${lon});
+          relation["amenity"="place_of_worship"]["religion"="muslim"](around:${radius},${lat},${lon});
+        );
+        out body;
+        >;
+        out skel qt;
+      `;
+      
+      const response = await fetch(overpassUrl, {
+        method: 'POST',
+        body: query,
+        headers: {
+          'Content-Type': 'text/plain'
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (!data.elements || data.elements.length === 0) {
+        // Fallback ke data statis jika tidak ada hasil
+        return getFallbackMosques(lat, lon);
+      }
+      
+      // Parse data masjid
+      const mosques = [];
+      const seenIds = new Set();
+      
+      for (const element of data.elements) {
+        if (element.type !== 'node' && element.type !== 'way') continue;
+        if (seenIds.has(element.id)) continue;
+        seenIds.add(element.id);
+        
+        const tags = element.tags || {};
+        const latMosque = element.lat || (element.center ? element.center.lat : null);
+        const lonMosque = element.lon || (element.center ? element.center.lon : null);
+        
+        if (!latMosque || !lonMosque) continue;
+        
+        const name = tags.name || tags['name:id'] || "Masjid";
+        const address = tags['addr:street'] || tags['addr:village'] || tags['addr:city'] || "";
+        
+        const distance = calculateDistance(lat, lon, latMosque, lonMosque);
+        
+        mosques.push({
+          id: element.id,
+          name: name,
+          address: address,
+          lat: latMosque,
+          lon: lonMosque,
+          distance: distance,
+          distanceFormatted: formatDistance(distance)
+        });
+      }
+      
+      // Urutkan berdasarkan jarak terdekat
+      mosques.sort((a, b) => a.distance - b.distance);
+      
+      // Ambil 5 terdekat
+      return mosques.slice(0, 8);
+      
+    } catch (error) {
+      console.warn("Error fetching mosques from Overpass API:", error);
+      return getFallbackMosques(lat, lon);
+    }
+  }
+  
+  // Fallback data masjid jika API gagal
+  function getFallbackMosques(lat, lon) {
+    // Data masjid terkenal di Bandung sebagai fallback (dengan jarak perkiraan)
+    const fallbackData = [
+      { name: "Masjid Raya Al-Jabbar", lat: -6.9369, lon: 107.6644, address: "Jl. Cimincrang, Gedebage" },
+      { name: "Masjid Raya Bandung", lat: -6.9175, lon: 107.6069, address: "Jl. Dalem Kaum No.14" },
+      { name: "Masjid Salman ITB", lat: -6.8915, lon: 107.6106, address: "Jl. Ganesha No.7" },
+      { name: "Masjid Pusdai", lat: -6.9025, lon: 107.6189, address: "Jl. Diponegoro No.129" },
+      { name: "Masjid Al-Ukhuwwah", lat: -6.8946, lon: 107.6097, address: "Jl. Sangkuriang No.1" }
+    ];
+    
+    return fallbackData.map(m => {
+      const distance = calculateDistance(lat, lon, m.lat, m.lon);
+      return {
+        id: m.name,
+        name: m.name,
+        address: m.address,
+        lat: m.lat,
+        lon: m.lon,
+        distance: distance,
+        distanceFormatted: formatDistance(distance)
+      };
+    }).sort((a, b) => a.distance - b.distance);
+  }
+  
+  // Render daftar masjid ke HTML
+  function renderMosqueList(mosques) {
+    if (!mosques || mosques.length === 0) {
+      masjidListDiv.innerHTML = `
+        <div class="loading-masjid">
+          <i class="fas fa-map-marker-alt"></i> Tidak ditemukan masjid di sekitar Anda
+        </div>`;
+      return;
+    }
+    
+    let html = '';
+    for (const mosque of mosques) {
+      html += `
+        <div class="masjid-item" onclick="openGoogleMaps(${mosque.lat}, ${mosque.lon}, '${encodeURIComponent(mosque.name)}')">
+          <div class="masjid-info">
+            <div class="masjid-name">
+              <i class="fas fa-mosque"></i> ${escapeHtml(mosque.name)}
+            </div>
+            ${mosque.address ? `<div class="masjid-address"><i class="fas fa-location-dot"></i> ${escapeHtml(mosque.address)}</div>` : ''}
+          </div>
+          <div class="masjid-distance">
+            <i class="fas fa-walking"></i> ${mosque.distanceFormatted}
+          </div>
+        </div>
+      `;
+    }
+    masjidListDiv.innerHTML = html;
+  }
+  
+  // Helper escape HTML
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+  
+  // Buka Google Maps dengan rute ke masjid
+  window.openGoogleMaps = function(lat, lon, name) {
+    const decodedName = decodeURIComponent(name);
+    const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&destination_place_id=&travelmode=driving`;
+    window.open(mapsUrl, '_blank');
+  };
+  
+  // Load masjid terdekat
+  async function loadNearbyMosques(lat, lon) {
+    masjidListDiv.innerHTML = `
+      <div class="loading-masjid">
+        <i class="fas fa-spinner fa-pulse"></i> Mencari masjid terdekat...
+      </div>`;
+    
+    const mosques = await fetchNearbyMosques(lat, lon);
+    nearestMosques = mosques;
+    renderMosqueList(mosques);
   }
 
   function getPrayerAPIUrl(lat, lon) {
@@ -749,6 +1030,10 @@
       
       await fetchPrayerSchedule();
       await fetchWeather();
+      
+      // Load masjid terdekat setelah lokasi diketahui
+      await loadNearbyMosques(currentLat, currentLon);
+      
     } catch (error) {
       console.warn("Gagal mendapatkan lokasi user, menggunakan default Bandung:", error);
       locationTextSpan.innerText = "Bandung (Default)";
@@ -758,6 +1043,7 @@
       updateTitleWithLocation();
       await fetchPrayerSchedule();
       await fetchWeather();
+      await loadNearbyMosques(currentLat, currentLon);
     }
   }
 
@@ -770,7 +1056,7 @@
     }
   }
 
-  // FUNGSI UTAMA UPDATE JAM - DIPERBAIKI
+  // FUNGSI UTAMA UPDATE JAM
   function updateClock() {
     const now = new Date();
     const hours = now.getHours().toString().padStart(2, '0');
@@ -778,7 +1064,6 @@
     const seconds = now.getSeconds().toString().padStart(2, '0');
     liveClockSpan.innerHTML = `${hours}:${minutes}:${seconds} <span id="timezoneLabel" style="font-size:1.2rem; letter-spacing:0;">${currentTimezone}</span>`;
     
-    // Update iqamah timer
     if (iqamahActive && iqamahEndTime) {
       const remaining = iqamahEndTime - now.getTime();
       if (remaining <= 0) {
@@ -796,13 +1081,13 @@
     updateAllCountdownsAndNext();
   }
 
-  // Interval setiap detik untuk update jam dan countdown
+  // Interval setiap detik
   setInterval(() => {
     updateClock();
     refreshDailyIfNeeded();
   }, 1000);
 
-  // Update running text setiap 30 detik
+  // Update running text setiap 50 detik
   setInterval(() => {
     const tickerDiv = document.getElementById("runningTicker");
     if (tickerDiv) {
